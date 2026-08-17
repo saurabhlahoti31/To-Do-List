@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -9,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB connection string
-const mongoURI = 'mongodb+srv://saurabhlahoti31_db_user:QWPeM9457F7Kvrxy@cluster0.15jwu0c.mongodb.net/Task';
+const mongoURI = process.env.MONGODB_URI;
 
 mongoose.connect(mongoURI)
   .then(() => console.log('MongoDB Connected successfully!'))
