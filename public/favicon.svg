@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#ec4899" />
+    </linearGradient>
+  </defs>
+  <!-- Sleek rounded squircle background with gradient matching Task Master theme -->
+  <rect x="1" y="1" width="30" height="30" rx="9" fill="url(#grad)" />
+  <!-- Crisp white checkmark -->
+  <path d="M9.5 16.5 L14 21 L22.5 11.5" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
