@@ -1,10 +1,9 @@
 import React, { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { TodoApp } from './component/todo/TodoApp';
 import { Login } from './component/auth/Login';
 import { Register } from './component/auth/Register';
-import { fetchTasks } from './store/feachers/todos/todosSlice';
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
@@ -16,12 +15,6 @@ const ProtectedRoute = ({ children }) => {
 
 export const App = () => {
   const { them } = useSelector((state) => state.them);
-  const dispatch = useDispatch();
-
-  // Load tasks on component mount
-  useEffect(() => {
-    dispatch(fetchTasks());
-  }, [dispatch]);
 
   // Apply theme to the document globally based on Redux state
   useEffect(() => {

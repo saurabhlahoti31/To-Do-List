@@ -7,7 +7,12 @@ const API_URL = 'http://localhost:5000/api/tasks';
 // 1. Fetch all tasks
 export const fetchTasks = createAsyncThunk('todos/fetchTasks', async (_, { rejectWithValue }) => {
     try {
-        const response = await fetch(API_URL);
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userId = user.userId;
+        if (!userId) {
+            throw new Error('User not logged in');
+        }
+        const response = await fetch(`${API_URL}?userId=${userId}`);
         if (!response.ok) throw new Error('Failed to fetch tasks');
         return await response.json();
     } catch (err) {
@@ -18,10 +23,15 @@ export const fetchTasks = createAsyncThunk('todos/fetchTasks', async (_, { rejec
 // 2. Add a new task
 export const addTaskAsync = createAsyncThunk('todos/addTaskAsync', async ({ title, category }, { rejectWithValue }) => {
     try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userId = user.userId;
+        if (!userId) {
+            throw new Error('User not logged in');
+        }
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, category })
+            body: JSON.stringify({ title, category, userId })
         });
         if (!response.ok) throw new Error('Failed to add task');
         return await response.json();

@@ -31,6 +31,11 @@ const TaskSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -110,7 +115,11 @@ app.post('/api/login', async (req, res) => {
 // 1. Get all tasks
 app.get('/api/tasks', async (req, res) => {
   try {
-    const tasks = await Task.find().sort({ createdAt: -1 });
+    const { userId } = req.query;
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+    const tasks = await Task.find({ userId }).sort({ createdAt: -1 });
     res.json(tasks);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -120,10 +129,15 @@ app.get('/api/tasks', async (req, res) => {
 // 2. Create a new task
 app.post('/api/tasks', async (req, res) => {
   try {
+    const { title, category, completed, userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
     const newTask = new Task({
-      title: req.body.title,
-      category: req.body.category,
-      completed: req.body.completed
+      title,
+      category,
+      completed,
+      userId
     });
     const savedTask = await newTask.save();
     res.status(201).json(savedTask);

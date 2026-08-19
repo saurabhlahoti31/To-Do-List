@@ -10,6 +10,7 @@ export const Header = () => {
 
     const handleLogout = () => {
         localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('user');
         navigate('/login');
     };
 
