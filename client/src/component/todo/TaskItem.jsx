@@ -23,6 +23,8 @@ export const TaskItem = ({ task }) => {
         }
     };
 
+    const categoryName = task.category || 'Other';
+
     return (
         <div className={`task-item ${task.completed ? 'completed' : ''}`}>
             <div className="task-left">
@@ -30,7 +32,7 @@ export const TaskItem = ({ task }) => {
                     type="checkbox"
                     role="button"
                     className="checkbox"
-                    checked={task.completed}
+                    checked={Boolean(task.completed)}
                     onChange={() => dispatch(toggleTaskAsync(task))}
                     disabled={isEditing}
                     aria-label={`Mark task ${task.title} as completed`}
@@ -49,8 +51,8 @@ export const TaskItem = ({ task }) => {
                 )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className={`badge badge-${task.category.toLowerCase()}`}>
-                    {task.category}
+                <span className={`badge badge-${categoryName.toLowerCase()}`}>
+                    {categoryName}
                 </span>
                 {isEditing ? (
                     <>

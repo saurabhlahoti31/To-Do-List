@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import '../../App.css'; // Use the main App styles
+import { API_BASE_URL } from '../../config/api';
+import '../../App.css';
 
 export const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate();
-
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/register', {
+      const response = await fetch(`${API_BASE_URL}/api/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -23,10 +25,16 @@ export const Register = () => {
         body: JSON.stringify({ name, email, password }),
       });
 
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = { error: await response.text() };
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Registration failed');
+        throw new Error(data.error || 'Registration failed.');
       }
       
       // Store login state and redirect
@@ -34,14 +42,33 @@ export const Register = () => {
       localStorage.setItem('user', JSON.stringify({ name, userId: data.userId }));
       navigate('/');
     } catch (err) {
-      setError(err.message);
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        setError('Unable to connect to server. Render backend may be spinning up, please wait 30 seconds and try again.');
+      } else {
+        setError(err.message || 'An unexpected error occurred');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="app-container" style={{ width: '100%', maxWidth: '400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <h2 style={{ textAlign: 'center', marginBottom: '10px', color: 'var(--text-dark)' }}>Create Account</h2>
-      {error && <p style={{ color: 'var(--danger)', textAlign: 'center', margin: 0 }}>{error}</p>}
+      {error && (
+        <div style={{
+          padding: '10px 14px',
+          borderRadius: '8px',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid var(--danger)',
+          color: 'var(--danger)',
+          fontSize: '0.88rem',
+          textAlign: 'center',
+          lineHeight: '1.4'
+        }}>
+          {error}
+        </div>
+      )}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <label htmlFor="name" style={{ color: 'var(--text-dark)', fontWeight: '500' }}>Name</label>
@@ -53,6 +80,7 @@ export const Register = () => {
             onChange={(e) => setName(e.target.value)}
             required
             placeholder="Enter your name"
+            disabled={loading}
           />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -65,6 +93,7 @@ export const Register = () => {
             onChange={(e) => setEmail(e.target.value)}
             required
             placeholder="Enter your email"
+            disabled={loading}
           />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -77,9 +106,12 @@ export const Register = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
             placeholder="Create a password"
+            disabled={loading}
           />
         </div>
-        <button type="submit" className="add-btn" style={{ marginTop: '10px' }}>Register</button>
+        <button type="submit" className="add-btn" style={{ marginTop: '10px' }} disabled={loading}>
+          {loading ? 'Registering...' : 'Register'}
+        </button>
         <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.9rem', color: 'var(--text-light)' }}>
           Already have an account? <Link to="/login" style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 'bold' }}>Login here</Link>
         </p>

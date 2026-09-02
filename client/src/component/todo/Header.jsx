@@ -8,6 +8,15 @@ export const Header = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
+    const getUserName = () => {
+        try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            return user.name || 'User';
+        } catch (e) {
+            return 'User';
+        }
+    };
+
     const handleLogout = () => {
         localStorage.removeItem('isAuthenticated');
         localStorage.removeItem('user');
@@ -16,8 +25,13 @@ export const Header = () => {
 
     return (
         <header className="header animate-slide-down">
-            <h1>Task Master</h1>
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div>
+                <h1 style={{ margin: 0 }}>Task Master</h1>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '2px' }}>
+                    Welcome back, <span style={{ fontWeight: '600', color: 'var(--accent-color)' }}>{getUserName()}</span> 👋
+                </p>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <button
                     className="theme-btn"
                     onClick={() => dispatch(toggleThem())}

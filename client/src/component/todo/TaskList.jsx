@@ -1,9 +1,36 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { TaskItem } from './TaskItem';
+import { fetchTasks } from '../../store/feachers/todos/todosSlice';
 
 export const TaskList = () => {
-    const { tasks, filter } = useSelector(state => state.todos);
+    const dispatch = useDispatch();
+    const { tasks, filter, status, error } = useSelector(state => state.todos);
+
+    if (status === 'loading') {
+        return (
+            <div className="empty-state animate-fade-in" style={{ padding: '2rem 1rem' }}>
+                <div style={{ fontSize: '2.5rem', display: 'inline-block' }}>⏳</div>
+                <p>Loading your tasks...</p>
+            </div>
+        );
+    }
+
+    if (status === 'failed') {
+        return (
+            <div className="empty-state animate-fade-in" style={{ padding: '2rem 1rem' }}>
+                <div style={{ fontSize: '2.5rem' }}>⚠️</div>
+                <p style={{ color: 'var(--danger)', marginBottom: '1rem' }}>{error || 'Failed to load tasks'}</p>
+                <button
+                    className="add-btn"
+                    onClick={() => dispatch(fetchTasks())}
+                    style={{ fontSize: '0.9rem', padding: '0.6rem 1.2rem' }}
+                >
+                    Retry Loading
+                </button>
+            </div>
+        );
+    }
 
     const filteredTasks = tasks.filter(task => {
         if (filter === 'Active') return !task.completed;
