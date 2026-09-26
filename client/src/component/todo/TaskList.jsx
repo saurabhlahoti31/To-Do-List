@@ -5,7 +5,7 @@ import { fetchTasks } from '../../store/feachers/todos/todosSlice';
 
 export const TaskList = () => {
     const dispatch = useDispatch();
-    const { tasks, filter, status, error } = useSelector(state => state.todos);
+    const { tasks, filter, priorityFilter, sortBy, status, error } = useSelector(state => state.todos);
 
     if (status === 'loading') {
         return (
@@ -32,26 +32,60 @@ export const TaskList = () => {
         );
     }
 
+    // 1. Filter by Status (All / Active / Completed) and Priority (All / High / Medium / Low)
     const filteredTasks = tasks.filter(task => {
-        if (filter === 'Active') return !task.completed;
-        if (filter === 'Completed') return task.completed;
-        return true; // 'All'
+        // Status filter
+        if (filter === 'Active' && task.completed) return false;
+        if (filter === 'Completed' && !task.completed) return false;
+
+        // Priority filter
+        if (priorityFilter && priorityFilter !== 'All') {
+            const taskPriorityName = task.priority?.priorityName || task.priorityName || 'Medium';
+            if (taskPriorityName.toLowerCase() !== priorityFilter.toLowerCase()) {
+                return false;
+            }
+        }
+
+        return true;
     });
 
-    if (filteredTasks.length === 0) {
+    // 2. Sort tasks based on selected option
+    const priorityOrderMap = { 'High': 1, 'Medium': 2, 'Low': 3 };
+
+    const sortedTasks = [...filteredTasks].sort((a, b) => {
+        if (sortBy === 'priority-high-low') {
+            const orderA = a.priority?.order || priorityOrderMap[a.priority?.priorityName || a.priorityName] || 2;
+            const orderB = b.priority?.order || priorityOrderMap[b.priority?.priorityName || b.priorityName] || 2;
+            return orderA - orderB;
+        }
+        if (sortBy === 'priority-low-high') {
+            const orderA = a.priority?.order || priorityOrderMap[a.priority?.priorityName || a.priorityName] || 2;
+            const orderB = b.priority?.order || priorityOrderMap[b.priority?.priorityName || b.priorityName] || 2;
+            return orderB - orderA;
+        }
+        // Default: keep existing order (createdAt desc)
+        return 0;
+    });
+
+    if (sortedTasks.length === 0) {
         return (
             <div className="empty-state animate-fade-in" style={{ animationDelay: '0.3s' }}>
                 <div style={{ fontSize: '3rem' }}>🍃</div>
-                <p>No tasks found. Time to relax or add a new one!</p>
+                <p>
+                    {priorityFilter !== 'All' || filter !== 'All'
+                        ? 'No tasks match the selected filters.'
+                        : 'No tasks found. Time to relax or add a new one!'}
+                </p>
             </div>
         );
     }
 
     return (
         <div className="task-list animate-slide-down" style={{ animationDelay: '0.3s' }}>
-            {filteredTasks.map(task => (
+            {sortedTasks.map(task => (
                 <TaskItem key={task.id} task={task} />
             ))}
         </div>
     );
 };
+

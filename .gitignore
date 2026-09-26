@@ -6,7 +6,7 @@ node_modules/
 .env
 .env.*
 !.env.example
-
+test.js
 # Build outputs
 dist/
 build/
