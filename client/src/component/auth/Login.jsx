@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { toggleThem } from '../../store/feachers/them/themSlice';
 import { API_BASE_URL } from '../../config/api';
-import '../../App.css';
+import './Login.css';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  const { them } = useSelector((state) => state.them);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -21,7 +27,7 @@ export const Login = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
       let data;
@@ -52,56 +58,91 @@ export const Login = () => {
   };
 
   return (
-    <div className="app-container" style={{ width: '100%', maxWidth: '400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '10px', color: 'var(--text-dark)' }}>Login</h2>
-      {error && (
-        <div style={{
-          padding: '10px 14px',
-          borderRadius: '8px',
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid var(--danger)',
-          color: 'var(--danger)',
-          fontSize: '0.88rem',
-          textAlign: 'center',
-          lineHeight: '1.4'
-        }}>
-          {error}
+    <div className="auth-page">
+      <div className="auth-card">
+        {/* Header with Branding and Theme Toggle */}
+        <div className="auth-header">
+          <div className="auth-header-content">
+            <div className="auth-brand">✦ Task Master</div>
+            <h2 className="auth-title">Welcome Back</h2>
+            <p className="auth-subtitle">Sign in to continue managing your tasks</p>
+          </div>
+          <button
+            type="button"
+            className="auth-theme-btn"
+            onClick={() => dispatch(toggleThem())}
+            title={`Switch to ${them === 'light' ? 'Dark' : 'Light'} Mode`}
+            aria-label="Toggle theme"
+          >
+            {them === 'light' ? '🌙' : '☀️'}
+          </button>
         </div>
-      )}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label htmlFor="email" style={{ color: 'var(--text-dark)', fontWeight: '500' }}>Email</label>
-          <input
-            className="task-input"
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="Enter your email"
-            disabled={loading}
-          />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label htmlFor="password" style={{ color: 'var(--text-dark)', fontWeight: '500' }}>Password</label>
-          <input
-            className="task-input"
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            placeholder="Enter your password"
-            disabled={loading}
-          />
-        </div>
-        <button type="submit" className="add-btn" style={{ marginTop: '10px' }} disabled={loading}>
-          {loading ? 'Connecting...' : 'Login'}
-        </button>
-        <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.9rem', color: 'var(--text-light)' }}>
-          Don't have an account? <Link to="/register" style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 'bold' }}>Register here</Link>
-        </p>
-      </form>
+
+        {/* Error Notification */}
+        {error && (
+          <div className="auth-error-banner">
+            <span>⚠️</span>
+            <div>{error}</div>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="auth-form-group">
+            <label htmlFor="email" className="auth-label">Email Address</label>
+            <div className="auth-input-wrapper">
+              <input
+                className="auth-input"
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="name@example.com"
+                disabled={loading}
+                autoComplete="email"
+              />
+            </div>
+          </div>
+
+          <div className="auth-form-group">
+            <label htmlFor="password" className="auth-label">Password</label>
+            <div className="auth-input-wrapper">
+              <input
+                className={`auth-input ${password ? 'has-toggle' : ''}`}
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="Enter your password"
+                disabled={loading}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                className="auth-toggle-pwd"
+                onClick={() => setShowPassword((prev) => !prev)}
+                title={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                tabIndex="-1"
+              >
+                {showPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" className="auth-submit-btn" disabled={loading}>
+            {loading && <div className="auth-spinner" />}
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+
+          <p className="auth-footer">
+            Don't have an account?
+            <Link to="/register" className="auth-link">Register here</Link>
+          </p>
+        </form>
+      </div>
     </div>
   );
 };

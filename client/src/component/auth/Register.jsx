@@ -1,19 +1,37 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { toggleThem } from '../../store/feachers/them/themSlice';
 import { API_BASE_URL } from '../../config/api';
-import '../../App.css';
+import './Login.css';
 
 export const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const { them } = useSelector((state) => state.them);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match. Please re-enter.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -22,7 +40,7 @@ export const Register = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
       });
 
       let data;
@@ -39,7 +57,7 @@ export const Register = () => {
       
       // Store login state and redirect
       localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('user', JSON.stringify({ name, userId: data.userId }));
+      localStorage.setItem('user', JSON.stringify({ name: name.trim(), userId: data.userId }));
       navigate('/');
     } catch (err) {
       if (err.name === 'TypeError' && err.message.includes('fetch')) {
@@ -53,69 +71,125 @@ export const Register = () => {
   };
 
   return (
-    <div className="app-container" style={{ width: '100%', maxWidth: '400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '10px', color: 'var(--text-dark)' }}>Create Account</h2>
-      {error && (
-        <div style={{
-          padding: '10px 14px',
-          borderRadius: '8px',
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid var(--danger)',
-          color: 'var(--danger)',
-          fontSize: '0.88rem',
-          textAlign: 'center',
-          lineHeight: '1.4'
-        }}>
-          {error}
+    <div className="auth-page">
+      <div className="auth-card">
+        {/* Header with Branding and Theme Toggle */}
+        <div className="auth-header">
+          <div className="auth-header-content">
+            <div className="auth-brand">✦ Task Master</div>
+            <h2 className="auth-title">Create Account</h2>
+            <p className="auth-subtitle">Join us to start organizing your daily tasks</p>
+          </div>
+          <button
+            type="button"
+            className="auth-theme-btn"
+            onClick={() => dispatch(toggleThem())}
+            title={`Switch to ${them === 'light' ? 'Dark' : 'Light'} Mode`}
+            aria-label="Toggle theme"
+          >
+            {them === 'light' ? '🌙' : '☀️'}
+          </button>
         </div>
-      )}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label htmlFor="name" style={{ color: 'var(--text-dark)', fontWeight: '500' }}>Name</label>
-          <input
-            className="task-input"
-            type="text"
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            placeholder="Enter your name"
-            disabled={loading}
-          />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label htmlFor="email" style={{ color: 'var(--text-dark)', fontWeight: '500' }}>Email</label>
-          <input
-            className="task-input"
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="Enter your email"
-            disabled={loading}
-          />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label htmlFor="password" style={{ color: 'var(--text-dark)', fontWeight: '500' }}>Password</label>
-          <input
-            className="task-input"
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            placeholder="Create a password"
-            disabled={loading}
-          />
-        </div>
-        <button type="submit" className="add-btn" style={{ marginTop: '10px' }} disabled={loading}>
-          {loading ? 'Registering...' : 'Register'}
-        </button>
-        <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.9rem', color: 'var(--text-light)' }}>
-          Already have an account? <Link to="/login" style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 'bold' }}>Login here</Link>
-        </p>
-      </form>
+
+        {/* Error Notification */}
+        {error && (
+          <div className="auth-error-banner">
+            <span>⚠️</span>
+            <div>{error}</div>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="auth-form-group">
+            <label htmlFor="name" className="auth-label">Full Name</label>
+            <div className="auth-input-wrapper">
+              <input
+                className="auth-input"
+                type="text"
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                placeholder="John Doe"
+                disabled={loading}
+                autoComplete="name"
+              />
+            </div>
+          </div>
+
+          <div className="auth-form-group">
+            <label htmlFor="email" className="auth-label">Email Address</label>
+            <div className="auth-input-wrapper">
+              <input
+                className="auth-input"
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="name@example.com"
+                disabled={loading}
+                autoComplete="email"
+              />
+            </div>
+          </div>
+
+          <div className="auth-form-group">
+            <label htmlFor="password" className="auth-label">Password</label>
+            <div className="auth-input-wrapper">
+              <input
+                className={`auth-input ${password ? 'has-toggle' : ''}`}
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="At least 6 characters"
+                disabled={loading}
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                className="auth-toggle-pwd"
+                onClick={() => setShowPassword((prev) => !prev)}
+                title={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                tabIndex="-1"
+              >
+                {showPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
+            </div>
+          </div>
+
+          <div className="auth-form-group">
+            <label htmlFor="confirmPassword" className="auth-label">Confirm Password</label>
+            <div className="auth-input-wrapper">
+              <input
+                className="auth-input"
+                type={showPassword ? 'text' : 'password'}
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                placeholder="Re-enter your password"
+                disabled={loading}
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="auth-submit-btn" disabled={loading}>
+            {loading && <div className="auth-spinner" />}
+            {loading ? 'Creating account...' : 'Create Account'}
+          </button>
+
+          <p className="auth-footer">
+            Already have an account?
+            <Link to="/login" className="auth-link">Login here</Link>
+          </p>
+        </form>
+      </div>
     </div>
   );
 };

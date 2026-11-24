@@ -61,6 +61,7 @@ const TaskSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  // Calendar deadline stored as Date (UTC noon) so the day does not shift across timezones.
   category: {
     type: String,
     default: 'Other'
@@ -371,13 +372,80 @@ async function resolvePriority(priorityInput) {
   return null;
 }
 
+function padDatePart(value) {
+  return String(value).padStart(2, '0');
+}
+
+function getTodayYmd() {
+  const now = new Date();
+  return `${now.getFullYear()}-${padDatePart(now.getMonth() + 1)}-${padDatePart(now.getDate())}`;
+}
+
+function parseDueDateInput(input) {
+  if (input === undefined || input === null || String(input).trim() === '') {
+    return { error: 'Due Date is required' };
+  }
+
+  const raw = input instanceof Date ? input.toISOString() : String(input).trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  let year;
+  let month;
+  let day;
+
+  if (match) {
+    year = Number(match[1]);
+    month = Number(match[2]);
+    day = Number(match[3]);
+  } else {
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) {
+      return { error: 'Due Date must be a valid date' };
+    }
+    year = parsed.getUTCFullYear();
+    month = parsed.getUTCMonth() + 1;
+    day = parsed.getUTCDate();
+  }
+
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return { error: 'Due Date is not a valid date' };
+  }
+
+  const utcDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  if (
+    utcDate.getUTCFullYear() !== year ||
+    utcDate.getUTCMonth() !== month - 1 ||
+    utcDate.getUTCDate() !== day
+  ) {
+    return { error: 'Due Date is not a valid calendar date' };
+  }
+
+  const ymd = `${year}-${padDatePart(month)}-${padDatePart(day)}`;
+  return { value: utcDate, ymd };
+}
+
+function isBeforeToday(ymd) {
+  return ymd < getTodayYmd();
+}
+
+function getTaskDueStatus(task) {
+  if (task.completed) return 'completed';
+  if (!task.dueDate) return 'none';
+  const parsed = parseDueDateInput(task.dueDate);
+  if (parsed.error) return 'none';
+  const today = getTodayYmd();
+  if (parsed.ymd === today) return 'today';
+  if (parsed.ymd > today) return 'upcoming';
+  return 'overdue';
+}
+
 
 // CRUD Routes for Tasks
 
 // 1. Get all tasks
 app.get('/api/tasks', async (req, res) => {
   try {
-    const { userId, priorityId, priorityName, sort } = req.query;
+    const { userId, priorityId, priorityName, sort, dueStatus } = req.query;
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
     }
@@ -414,10 +482,28 @@ app.get('/api/tasks', async (req, res) => {
       return obj;
     });
 
+    if (dueStatus && dueStatus !== 'all') {
+      tasks = tasks.filter((task) => getTaskDueStatus(task) === dueStatus);
+    }
+
     if (sort === 'priority-high-to-low') {
       tasks.sort((a, b) => (a.priority?.order || 99) - (b.priority?.order || 99));
     } else if (sort === 'priority-low-to-high') {
       tasks.sort((a, b) => (b.priority?.order || 0) - (a.priority?.order || 0));
+    } else if (sort === 'due-earliest') {
+      tasks.sort((a, b) => {
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate) - new Date(b.dueDate);
+      });
+    } else if (sort === 'due-latest') {
+      tasks.sort((a, b) => {
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(b.dueDate) - new Date(a.dueDate);
+      });
     }
 
     res.json(tasks);
@@ -447,13 +533,21 @@ app.post('/api/tasks', async (req, res) => {
       return res.status(400).json({ error: 'Invalid Priority ID or Priority Name. Priority does not exist.' });
     }
 
+    const parsedDueDate = parseDueDateInput(dueDate);
+    if (parsedDueDate.error) {
+      return res.status(400).json({ error: parsedDueDate.error });
+    }
+    if (isBeforeToday(parsedDueDate.ymd)) {
+      return res.status(400).json({ error: 'Due Date cannot be earlier than today' });
+    }
+
     const newTask = new Task({
       title: title.trim(),
       category: category || 'Other',
       completed: Boolean(completed),
       priority: resolvedPriority._id,
       description: description ? description.trim() : '',
-      dueDate: dueDate ? new Date(dueDate) : null,
+      dueDate: parsedDueDate.value,
       userId
     });
 
